@@ -6,7 +6,7 @@ import urllib.request, json
 from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, redirect, Response
 
 
 class Blockchain(object):
@@ -150,10 +150,12 @@ class Blockchain(object):
         :param amount: <int> Amount
         :return: <int> The index of the Block that will hold this transaction
         """
+        sender = socket.gethostbyname(socket.gethostname())
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
+            'company': "The Farm"
         })
 
         return self.last_block['index'] + 1
@@ -203,7 +205,7 @@ class Blockchain(object):
         return guess_hash[:4] == "0000"
         
 # Instantiate the Node
-app = Flask(__name__)
+app = Flask(__name__, static_path='/static')
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
@@ -211,16 +213,33 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-@app.route("/api/logfile", methods=['GET', 'POST'])
-def post_logfile():
-    log_file = None
-    with open('../data/data.txt', 'w') as outfile:
-        json.dump(request.form, outfile)
-        if log_file is None: 
-            return "No data provided", 400
+'''Generic Requests'''
+@app.route('/getmethod/<jsdata>', methods=['GET'])
+def get_javascript_data(jsdata):
+    return jsdata
 
-@app.route('/mine', methods=['GET'])
-def mine():
+@app.route('/postmethod/<jsdata>')
+def get_post_javascript_data(jsdata):
+    jso = {'tool' : jsdata}
+    print(jso)
+    return jsonify(jso)
+
+@app.route('/receiver', methods = ['POST'])
+def worker():
+    # read json + reply
+    data = request.get_json()
+    result = ''
+
+    for item in data:
+        # loop over every row
+        result += str(item['make']) + '\n'
+
+    print(result) 
+    return result
+
+
+@app.route('/mine/<jsdata>', methods=['GET'])
+def mine(jsdata):
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
     last_proof = last_block['proof']
@@ -239,12 +258,31 @@ def mine():
     #http://maps.googleapis.com/maps/api/geocode/json?address=google
 
     block = blockchain.new_block(proof) 
+    jsx = json.loads(jsdata)
+    #jsx = json.loads(jsdata)
+    print(jsx['tname'])
+    if jsx['ttype'] is not None:
+        jso = {'tool' : jsx['tname'],
+        'tool_type' : jsx['ttype'],
+        'tool_project' : jsx['tproj']}
+    elif jsx['tproj'] is not None and jsx['ttype'] is not None:
+        jso = {'tool' : jsx['tname'],
+        'tool_type' : jsx['ttype'],
+        'tool_project' : jsx['tproj']}
+    else:
+        jso = {'tool' : jsx['tname'],
+        'tool_type' : None,
+        'tool_project' : None}#jsdata[0] = jsdata.replace(".toolset", "")
+    #jsdata[1] = jsdata.replace(".toolset", "")
+    print(jsdata)
 
     response = {
-        'message': "SZ",
-        'index': block['index'],
+        'Tool_name': jso['tool'],
+        'Tool_type': jso['tool_type'],
+        'Tool_Project': jso['tool_project'],
+        'order_index': block['index'],
         'transactions': block['transactions'],
-        'proof': block['proof'],
+        'block_proof': block['proof'],
         'previous_hash': block['previous_hash'],
     }
     return jsonify(response), 200
@@ -418,4 +456,4 @@ def consensus():
 if __name__ == '__main__':
 	#debug host='0.0.0.0'
     #socket.gethostbyname(socket.gethostname())
-	app.run(host=socket.gethostbyname(socket.gethostname()), port=5000)
+	app.run(host=socket.gethostbyname(socket.gethostname()), port=500)
