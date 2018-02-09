@@ -4,7 +4,7 @@
 	<head>
 		<style>
 			body {
-    			background: lightblue url("OGS.jpg") no-repeat fixed center;
+    			background: lightblue url("../static/images/OGS.jpg") no-repeat fixed center;
 			}
 		</style>
 	</head>
@@ -16,7 +16,7 @@
 	<body>
 		<div ng-app="demoApp">
 		<h1>OGOUS TOOLBOX</h1>
-		<form name="mined" ng-controller="demoController">
+		<form id="mined" ng-controller="demoController">
   				<p>Tools by Name:  </p><input type="text" ng-model="tool.tname">
   				<p>Tools by Type:  </p><input type="text" ng-model="tool.ttype">
   				<p>Tools by Project: </p><input type="text" ng-model="tool.tproj">
@@ -40,8 +40,6 @@
             			.send("POST", sw);
         			});*/
 
-
-
 				app.controller('demoController', function($scope) {
 				$scope.tname= "Search by Tool Name";
 				$scope.ttype= "Search by Tool Type";
@@ -53,8 +51,8 @@
             			tool : $scope.tname
         			})
             event.preventDefault();
-}
-});</script>
+					}
+				});</script>
 			</form>
 		</div>
 	</body>

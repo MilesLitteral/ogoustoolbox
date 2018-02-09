@@ -142,6 +142,11 @@ class Blockchain(object):
         self.chain.append(block)
         return block
 
+    def get_transaction(self, trans):
+        print(self.chain)
+        vs = self.chain[1]
+        return vs
+
     def new_transaction(self, sender, recipient, amount):
         """
         Creates a new transaction to go into the next mined Block
@@ -257,24 +262,24 @@ def mine(jsdata):
     # Forge the new Block by adding it to the chain
     #http://maps.googleapis.com/maps/api/geocode/json?address=google
 
-    block = blockchain.new_block(proof) 
+    block = blockchain.new_block(proof)
+    y = str(blockchain.get_transaction(1))
+    print("Transaction 1: " +  y)
     jsx = json.loads(jsdata)
-    #jsx = json.loads(jsdata)
+    
     print(jsx['tname'])
-    if jsx['ttype'] is not None:
+    if 'ttype' in jsx:
         jso = {'tool' : jsx['tname'],
         'tool_type' : jsx['ttype'],
-        'tool_project' : jsx['tproj']}
-    elif jsx['tproj'] is not None and jsx['ttype'] is not None:
+        'tool_project' : jsx['tproj'],}
+    elif 'tproj' in jsx and 'ttype' in jsx is True:
         jso = {'tool' : jsx['tname'],
         'tool_type' : jsx['ttype'],
-        'tool_project' : jsx['tproj']}
+        'tool_project' : jsx['tproj'],}
     else:
         jso = {'tool' : jsx['tname'],
         'tool_type' : None,
-        'tool_project' : None}#jsdata[0] = jsdata.replace(".toolset", "")
-    #jsdata[1] = jsdata.replace(".toolset", "")
-    print(jsdata)
+        'tool_project' : None,}
 
     response = {
         'Tool_name': jso['tool'],
