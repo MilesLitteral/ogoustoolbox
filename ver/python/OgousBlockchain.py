@@ -15,7 +15,6 @@ class Blockchain(object):
         self.chain = []
         self.nodes = set()
         self.users = []
-        self.jso = []
 
         # Create the genesis block
         self.new_block(previous_hash=1, proof=100)
@@ -134,7 +133,6 @@ class Blockchain(object):
             'timestamp': time(),
             'transactions': self.current_transactions,
             'proof': proof,
-            #'tool_data': jso['tool'],
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
@@ -265,9 +263,9 @@ def mine(jsdata):
     #http://maps.googleapis.com/maps/api/geocode/json?address=google
 
     block = blockchain.new_block(proof)
-    blockchain.jso.add(jsx)
+    y = str(blockchain.get_transaction(1))
+    print("Transaction 1: " +  y)
     jsx = json.loads(jsdata)
-
     
     print(jsx['tname'])
     if 'ttype' in jsx:
