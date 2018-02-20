@@ -162,9 +162,10 @@ class Blockchain(object):
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
-            'company': "The Farm"
+            'company': "The Farm",
+            'requested_order': self.jso
         })
-
+        del(self.jso[:])
         return self.last_block['index'] + 1
 
     @property
@@ -263,10 +264,9 @@ def mine(jsdata):
 
     # Forge the new Block by adding it to the chain
     #http://maps.googleapis.com/maps/api/geocode/json?address=google
-
-    block = blockchain.new_block(proof)
-    blockchain.jso.add(jsx)
     jsx = json.loads(jsdata)
+    block = blockchain.new_block(proof)
+    blockchain.jso.append(jsx)
 
     
     print(jsx['tname'])
@@ -284,9 +284,6 @@ def mine(jsdata):
         'tool_project' : None,}
 
     response = {
-        'Tool_name': jso['tool'],
-        'Tool_type': jso['tool_type'],
-        'Tool_Project': jso['tool_project'],
         'order_index': block['index'],
         'transactions': block['transactions'],
         'block_proof': block['proof'],
