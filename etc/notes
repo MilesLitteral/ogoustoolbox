@@ -1,0 +1,17 @@
+notes
+
+CREATE ENTRTY:
+from django_toolbox.models import hand_tool
+b = hand_tool(tool_name='Providence', tool_price=93)
+b.save()
+
+RETRIEVE ENTRY:
+	#ACTUAL ALL
+	from django_toolbox.models import hand_tool
+	all = hand_tool.objects.all
+	for i in all:
+		print(i.tool_name)
+		
+	#SOME
+	all = hand_tool.objects.get(tool_name__exact='Law')
+	print(all)

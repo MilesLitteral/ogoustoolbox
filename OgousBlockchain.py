@@ -7,7 +7,11 @@ from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 from flask import Flask, jsonify, request, render_template, redirect, Response
-
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine, inspect
+import dropbox
+#from flask_cdn import CDN
+#from OgousBlockchain.models import hand_tool
 
 class Blockchain(object):
     def __init__(self):
@@ -16,6 +20,8 @@ class Blockchain(object):
         self.nodes = set()
         self.users = []
         self.jso = []
+        self.BG = []
+        self.oauth = '9XRZVbmMaVwAAAAAAAABe_TzR-o0XXzjWKX8wuThRONjxkA1Y0HJw6sUPeMVY40Q'
 
         # Create the genesis block
         self.new_block(previous_hash=1, proof=100)
@@ -158,12 +164,28 @@ class Blockchain(object):
         :return: <int> The index of the Block that will hold this transaction
         """
         sender = socket.gethostbyname(socket.gethostname())
+        engine = create_engine('postgresql://localhost:5432/ogous?user=postgres&password=Getter77')
+        rs = engine.execute('SELECT * FROM hand_tool')
+        mxp = 0
+
+        for row in rs:
+            self.BG.append(row)
+
+        for x in self.BG:
+            for y in self.jso:
+                if(x.tool_name == y['tname']):
+                    mxp = x.tool_price
+                    break
+        #print(BG[0].tool_name)
+
+
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
+            'tool_price' : mxp,
             'company': "The Farm",
-            'requested_order': self.jso
+            'requested_order': list(self.jso)
         })
         del(self.jso[:])
         return self.last_block['index'] + 1
@@ -214,6 +236,8 @@ class Blockchain(object):
         
 # Instantiate the Node
 app = Flask(__name__, static_path='/static')
+app.config.from_object('config')
+db = SQLAlchemy(app)
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
@@ -221,10 +245,25 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+dbx = dropbox.Dropbox(blockchain.oauth)
+for entry in dbx.files_list_folder('').entries:
+    print("Ogous CDN: " + entry.name)
+
 '''Generic Requests'''
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('404.html'), 404
+
 @app.route('/getmethod/<jsdata>', methods=['GET'])
 def get_javascript_data(jsdata):
     return jsdata
+@app.route('/upload', methods=['POST'])
+def upload_file(file_from, file_to):
+    """upload a file to Dropbox using API v2
+    """
+    dbx = dropbox.Dropbox(blockchain.oauth)
+    with open(file_from, 'rb') as f:
+        dbx.files_upload(f.read(), file_to)
 
 @app.route('/postmethod/<jsdata>')
 def get_post_javascript_data(jsdata):
@@ -248,48 +287,67 @@ def worker():
 
 @app.route('/mine/<jsdata>', methods=['GET'])
 def mine(jsdata):
-    # We run the proof of work algorithm to get the next proof...
-    last_block = blockchain.last_block
-    last_proof = last_block['proof']
-    proof = blockchain.proof_of_work(last_proof)
-    '''reg_node()'''
+    engine = create_engine('postgresql://localhost:5432/ogous?user=postgres&password=Getter77')
+    rs = engine.execute('SELECT * FROM hand_tool')
+    BG =[]
+    for row in rs:
+        BG.append(row)
+        print(BG[0].tool_name)
 
-    # We must receive a reward for finding the proof.
-    # The sender is "0" to signify that this node has mined a new coin.
-    blockchain.new_transaction(
-        sender="0",
-        recipient=node_identifier,
-        amount=1,
-    )
 
-    # Forge the new Block by adding it to the chain
-    #http://maps.googleapis.com/maps/api/geocode/json?address=google
     jsx = json.loads(jsdata)
-    block = blockchain.new_block(proof)
     blockchain.jso.append(jsx)
+    sx = False
+    for i in BG:
+        if(jsx['tname'] == i.tool_name):
+            sx = True
+            break
+        else:
+            sx = False
+
+    if sx is False:
+        return render_template('Error_Page.html')
+    elif sx is True:
+        # We run the proof of work algorithm to get the next proof...
+        last_block = blockchain.last_block
+        last_proof = last_block['proof']
+        proof = blockchain.proof_of_work(last_proof)
+
+        # We must receive a reward for finding the proof.
+        # The sender is "0" to signify that this node has mined a new coin.
+        blockchain.new_transaction(
+            sender="0",
+            recipient=node_identifier,
+            amount=1,
+        )
+
+        # Forge the new Block by adding it to the chain
+        #http://maps.googleapis.com/maps/api/geocode/json?address=google
+        block = blockchain.new_block(proof)
 
     
-    print(jsx['tname'])
-    if 'ttype' in jsx:
-        jso = {'tool' : jsx['tname'],
-        'tool_type' : jsx['ttype'],
-        'tool_project' : jsx['tproj'],}
-    elif 'tproj' in jsx and 'ttype' in jsx is True:
-        jso = {'tool' : jsx['tname'],
-        'tool_type' : jsx['ttype'],
-        'tool_project' : jsx['tproj'],}
-    else:
-        jso = {'tool' : jsx['tname'],
-        'tool_type' : None,
-        'tool_project' : None,}
+        print(jsx['tname'])
+        if 'ttype' in jsx:
+            jso = {'tool' : jsx['tname'],
+            'tool_type' : jsx['ttype'],
+            'tool_project' : jsx['tproj'],}
+        elif 'tproj' in jsx and 'ttype' in jsx is True:
+            jso = {'tool' : jsx['tname'],
+            'tool_type' : jsx['ttype'],
+            'tool_project' : jsx['tproj'],}
+        else:
+            jso = {'tool' : jsx['tname'],
+            'tool_price' : BG[0].tool_price,
+            'tool_type' : None,
+            'tool_project' : None,}
 
-    response = {
-        'order_index': block['index'],
-        'transactions': block['transactions'],
-        'block_proof': block['proof'],
-        'previous_hash': block['previous_hash'],
-    }
-    return jsonify(response), 200
+        response = {
+            'order_index': block['index'],
+            'transactions': block['transactions'],
+            'block_proof': block['proof'],
+            'previous_hash': block['previous_hash'],
+        }
+        return jsonify(response), 200
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -458,6 +516,5 @@ def consensus():
 
 
 if __name__ == '__main__':
-	#debug host='0.0.0.0'
-    #socket.gethostbyname(socket.gethostname())
-	app.run(host=socket.gethostbyname(socket.gethostname()), port=500)
+    db.init_app(app)
+    app.run(host=socket.gethostbyname(socket.gethostname()), port=5000)
